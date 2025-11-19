@@ -1,0 +1,53 @@
+﻿@{
+    ViewData["Title"] = "Login";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+    var emailValue = ViewData["email"] as string ?? string.Empty;
+}
+
+<h1>Entrar</h1>
+
+@if (!ViewData.ModelState.IsValid)
+{
+<div class="validation-summary-errors" style="color: #a94442; margin-bottom:10px;">
+    @Html.ValidationSummary(false)
+</div>
+}
+
+<form asp-controller="Account" asp-action="Login" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="form-group" style="margin-bottom:10px;">
+        <label for="email">E-mail</label>
+        <input type="email" name="email" id="email" class="form-control" value="@emailValue" required />
+    </div>
+
+    <div class="form-group" style="margin-bottom:10px;">
+        <label for="senha">Senha</label>
+        <input type="password" name="senha" id="senha" class="form-control" required />
+    </div>
+
+    <div class="form-group" style="margin-top:15px;">
+        <button type="submit" class="btn btn-primary">Entrar</button>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary" style="margin-left:8px;">Cancelar</a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(returnUrl))
+    {
+    <input type="hidden" name="returnUrl" value="@returnUrl" />
+    }
+</form>
+
+<hr />
+
+<div style="display:flex; gap:20px; align-items:center;">
+    <div>
+        <a asp-controller="Account" asp-action="Register" class="link">Primeiro Acesso</a>
+    </div>
+    <div>
+        <a asp-controller="Account" asp-action="ForgotPassword" class="link">Esqueci minha senha</a>
+    </div>
+</div>
+
+@section Scripts {
+    @* Manter os scripts do layout se quiser validação cliente *@
+}

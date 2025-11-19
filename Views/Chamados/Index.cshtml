@@ -1,0 +1,25 @@
+﻿@model IEnumerable<TonyTI_Web.Models.Chamado>
+    @{
+    Layout = "_Layout";
+    ViewData["Title"] = "Meus Chamados";
+    }
+    <h2>Meus Chamados</h2>
+    <p><a asp-action="Create">Abrir Chamado</a></p>
+    <table>
+        <thead>
+            <tr><th>Código</th><th>Nome</th><th>Urgência</th><th>Data</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach(var c in Model)
+    {
+            <tr>
+                <td>@c.Id</td>
+                <td>@c.Nome</td>
+                <td>@c.Urgencia</td>
+                <td>@c.DataAbertura.ToLocalTime().ToString("g")</td>
+                <td>@c.Status</td>
+                <td><a asp-action="Details" asp-route-id="@c.Id">Detalhes</a></td>
+            </tr>
+    }
+        </tbody>
+    </table>

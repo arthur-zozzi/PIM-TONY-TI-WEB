@@ -1,0 +1,29 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewData["Title"] - Tony TI</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <header>
+        <nav>
+            <a asp-controller="Home" asp-action="Index">Home</a> |
+            <a asp-controller="Chamados" asp-action="Index">Chamados</a> |
+            <a asp-controller="Account" asp-action="Login">Login</a>
+        </nav>
+    </header>
+
+    <main role="main" class="container">
+        @RenderBody()
+    </main>
+
+    <footer>
+        <hr />
+        <p>Tony TI — Sistema de Chamados</p>
+    </footer>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,57 @@
+﻿@{
+    ViewData["Title"] = "Início - Tony TI";
+    var userName = User?.Identity?.Name ?? "Usuário";
+}
+
+<div class="container" style="max-width:900px; margin-top:40px;">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Bem-vindo ao Tony TI</h2>
+            <p class="text-muted">Olá, @userName. Escolha uma opção abaixo para começar.</p>
+
+            <div class="d-flex flex-wrap gap-3" style="margin-top:24px;">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-lg btn-outline-primary" role="button" style="min-width:180px;">
+                    Início
+                </a>
+
+                <a asp-controller="Chamados" asp-action="Index" class="btn btn-lg btn-outline-secondary" role="button" style="min-width:180px;">
+                    Meus Chamados
+                </a>
+
+                <a asp-controller="Chamados" asp-action="Create" class="btn btn-lg btn-outline-success" role="button" style="min-width:180px;">
+                    Abrir Chamado
+                </a>
+
+                <a asp-controller="Home" asp-action="Help" class="btn btn-lg btn-outline-info" role="button" style="min-width:180px;">
+                    Ajuda
+                </a>
+
+                <!-- logout: usa POST por segurança -->
+                <form id="logoutForm" asp-controller="Account" asp-action="Logout" method="post" style="display:inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-lg btn-outline-danger" style="min-width:180px;">
+                        Sair
+                    </button>
+                </form>
+            </div>
+
+            <hr />
+
+            <div class="mt-3 text-muted">
+                Dica: Use <strong>Meus Chamados</strong> para acompanhar solicitações e <strong>Abrir Chamado</strong> para reportar um novo problema.
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* estilo opcional leve para ficar mais agradável */
+    .card { border-radius: 10px; }
+    .btn-lg { padding: 12px 18px; font-weight: 600; }
+
+    
+    @@media (max-width: 600px) {
+        .d-flex { flex-direction: column; }
+        .btn-lg { width: 100% !important; }
+    }
+</style>

@@ -1,0 +1,22 @@
+﻿@{
+    ViewData["Title"] = "Verificar código";
+    var email = ViewData["email"]?.ToString() ?? "";
+}
+<h2>Verificar código</h2>
+
+@if (!ViewData.ModelState.IsValid)
+{
+<div class="alert alert-danger">
+    @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors)) { <div>@e.ErrorMessage</div> }
+</div>
+}
+
+<form asp-action="VerifyCode" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="email" value="@email" />
+    <div class="form-group">
+        <label for="code">Código recebido por e-mail</label>
+        <input id="code" name="code" class="form-control" />
+    </div>
+    <button type="submit" class="btn btn-primary mt-2">Verificar</button>
+</form>

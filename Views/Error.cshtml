@@ -1,0 +1,13 @@
+﻿@model TonyTI_Web.Models.ErrorViewModel
+
+@{
+    ViewData["Title"] = "Error";
+}
+
+<h1 class="text-danger">Erro.</h1>
+@if (Model?.ShowRequestId ?? false)
+{
+<div>
+    <strong>Request ID:</strong> @Model.RequestId
+</div>
+}
