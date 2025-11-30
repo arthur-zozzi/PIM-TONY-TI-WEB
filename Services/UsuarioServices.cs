@@ -10,6 +10,7 @@ using TonyTI_Web.Models;
 
 namespace TonyTI_Web.Services
 {
+    // Serviço responsável por operações relacionadas a usuários (autenticação, criação, recuperação)
     public class UsuarioService : IUsuarioService
     {
         private readonly ISqlConnectionFactory _factory;
@@ -21,6 +22,7 @@ namespace TonyTI_Web.Services
             _logger = logger;
         }
 
+        // Autentica usuário por email e senha (suporta hash SHA256 e fallback para senha em texto)
         public async Task<Usuario?> AuthenticateAsync(string email, string senha)
         {
             if (string.IsNullOrWhiteSpace(email))
@@ -38,7 +40,7 @@ namespace TonyTI_Web.Services
                 _logger.LogDebug("Connection string (masked): {Conn}", MaskConnectionString(conn.ConnectionString));
                 await conn.OpenAsync();
 
-                // 1) Busca apenas a senha armazenada para este email
+                // 1) Recupera senha armazenada para o email
                 string? storedPwd = null;
                 await using (var cmd = conn.CreateCommand())
                 {
@@ -58,23 +60,22 @@ namespace TonyTI_Web.Services
                     return null;
                 }
 
-                // Log de diagnóstico (mascare o meio da senha - para não vazar tudo)
+                // Log de diagnóstico com preview mascarado
                 _logger.LogDebug("StoredPwd length={Len}, preview='{PreviewStart}...{PreviewEnd}'",
                     storedPwd.Length,
                     storedPwd.Length >= 3 ? storedPwd.Substring(0, 3) : storedPwd,
                     storedPwd.Length >= 3 ? storedPwd.Substring(Math.Max(0, storedPwd.Length - 3)) : "");
 
-                // 2) Comparações em memória (evita diferenças de SQL/parametro)
+                // 2) Comparação por hash
                 if (string.Equals(storedPwd, hash, StringComparison.Ordinal))
                 {
-                    // Autenticado por hash
                     _logger.LogInformation("Usuário autenticado por HASH: {Email}", email);
                     return await BuildUsuarioFromRowAsync(conn, email);
                 }
 
+                // 3) Fallback: senha em texto (migrar para hash)
                 if (string.Equals(storedPwd, senha, StringComparison.Ordinal))
                 {
-                    // Autenticado por senha em texto plano (fallback) -> migrar para hash
                     _logger.LogInformation("Usuário autenticado por senha PLANA (fallback). Migrando para HASH: {Email}", email);
 
                     try
@@ -90,13 +91,13 @@ namespace TonyTI_Web.Services
                     catch (Exception exUpd)
                     {
                         _logger.LogError(exUpd, "Falha ao atualizar senha para hash para {Email}", email);
-                        // não falha a autenticação, apenas loga
+                        // não interrompe a autenticação; apenas loga a falha de migração
                     }
 
                     return await BuildUsuarioFromRowAsync(conn, email);
                 }
 
-                // nenhum dos dois bateu -> log detalhado para diagnóstico
+                // Não autenticou — log para diagnóstico
                 _logger.LogWarning("Authenticate mismatch for {Email}: storedLen={StoredLen}, providedLen={ProvidedLen}", email, storedPwd.Length, (senha ?? "").Length);
                 _logger.LogWarning("Stored preview='{Start}...{End}', Provided preview='{PStart}...{PEnd}'",
                     storedPwd.Length >= 4 ? storedPwd.Substring(0, 2) : storedPwd,
@@ -113,10 +114,9 @@ namespace TonyTI_Web.Services
             }
         }
 
-        // Recupera os outros campos do usuário (nome, foto, etc.) após já saber que o email existe.
+        // Busca dados completos do usuário após confirmar existência do email
         private static async Task<Usuario?> BuildUsuarioFromRowAsync(SqlConnection conn, string email)
         {
-            // Nota: recebido SqlConnection, criar novo comando para buscar campos adicionais.
             await using var cmd = conn.CreateCommand();
             cmd.CommandText = @"SELECT email, senha, nome, foto, recuperacaoSenha, Perfil FROM Usuarios WHERE email = @email";
             var p = cmd.CreateParameter(); p.ParameterName = "@email"; p.Value = email; cmd.Parameters.Add(p);
@@ -138,6 +138,7 @@ namespace TonyTI_Web.Services
             return null;
         }
 
+        // Cria novo usuário (armazena senha como hash)
         public async Task<Usuario> CreateAsync(string email, string senha, string nome)
         {
             var hash = ComputeHash(senha);
@@ -173,6 +174,7 @@ namespace TonyTI_Web.Services
             }
         }
 
+        // Verifica existência de email
         public async Task<bool> EmailExistsAsync(string email)
         {
             _logger.LogDebug("EmailExistsAsync called for email={Email}", email);
@@ -198,6 +200,7 @@ namespace TonyTI_Web.Services
             }
         }
 
+        // Gera hash SHA256 para a senha
         private static string ComputeHash(string senha)
         {
             using var sha = SHA256.Create();
@@ -206,7 +209,7 @@ namespace TonyTI_Web.Services
             return Convert.ToBase64String(hash);
         }
 
-        // novos métodos para recuperação de senha -- etapa 2 solicitada
+        // Salva código de recuperação no banco
         public async Task<bool> SetRecoveryCodeAsync(string email, string code)
         {
             _logger.LogInformation("SetRecoveryCodeAsync called for {Email}", email);
@@ -231,6 +234,7 @@ namespace TonyTI_Web.Services
             }
         }
 
+        // Verifica se o código de recuperação corresponde ao registrado
         public async Task<bool> VerifyRecoveryCodeAsync(string email, string code)
         {
             _logger.LogDebug("VerifyRecoveryCodeAsync called for {Email}", email);
@@ -257,6 +261,7 @@ namespace TonyTI_Web.Services
             }
         }
 
+        // Atualiza senha (recebendo o hash já calculado) e limpa o código de recuperação
         public async Task<bool> UpdatePasswordWithHashAsync(string email, string newHash)
         {
             _logger.LogInformation("UpdatePasswordWithHashAsync called for {Email}", email);
@@ -281,11 +286,10 @@ namespace TonyTI_Web.Services
             }
         }
 
-        // helper: mascara connection string para log (remove credenciais)
+        // Remove credenciais da connection string para logs (simplificado)
         private static string MaskConnectionString(string cs)
         {
             if (string.IsNullOrEmpty(cs)) return cs;
-            // remove password if present (simples)
             var lowered = cs.ToLowerInvariant();
             if (lowered.Contains("password="))
             {

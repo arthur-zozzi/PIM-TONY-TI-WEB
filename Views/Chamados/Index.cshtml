@@ -1,25 +1,97 @@
 ﻿@model IEnumerable<TonyTI_Web.Models.Chamado>
+
     @{
     Layout = "_Layout";
-    ViewData["Title"] = "Meus Chamados";
+    ViewData["Title"] = "Chamados";
+
+    // Recupera do ViewBag se o usuário logado é técnico
+    var isTecnico = (ViewBag.IsTecnico as bool?) ?? false;
     }
-    <h2>Meus Chamados</h2>
-    <p><a asp-action="Create">Abrir Chamado</a></p>
-    <table>
-        <thead>
-            <tr><th>Código</th><th>Nome</th><th>Urgência</th><th>Data</th><th>Status</th><th></th></tr>
-        </thead>
-        <tbody>
-            @foreach(var c in Model)
+
+    <div class="container">
+        <h2>@(isTecnico ? "Todos os Chamados" : "Meus Chamados")</h2>
+
+        @if (TempData["Message"] != null)
     {
-            <tr>
-                <td>@c.Id</td>
-                <td>@c.Nome</td>
-                <td>@c.Urgencia</td>
-                <td>@c.DataAbertura.ToLocalTime().ToString("g")</td>
-                <td>@c.Status</td>
-                <td><a asp-action="Details" asp-route-id="@c.Id">Detalhes</a></td>
-            </tr>
+        // Exibe mensagens temporárias (ex: alteração feita, chamado criado)
+        <div class="alert alert-info">@TempData["Message"]</div>
     }
-        </tbody>
-    </table>
+
+        <div class="mb-3">
+            <!-- Botão para abrir novo chamado -->
+            <a class="btn btn-primary" href="@Url.Action("Create","Chamados")">Abrir Chamado</a>
+
+            @if (isTecnico)
+        {
+            // Apenas técnicos podem atualizar a lista completa
+            <a class="btn btn-outline-secondary" href="@Url.Action("Index","Chamados")" style="margin-left:8px;">
+                Atualizar lista
+            </a>
+        }
+        </div>
+
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nome</th>
+                    <th>Urgência</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+
+                @if (!Model.Any())
+            {
+                // Caso não existam chamados
+                <tr>
+                    <td colspan="6"><em>Nenhum chamado encontrado.</em></td>
+                </tr>
+            }
+            else
+            {
+                // Percorre os chamados retornados pelo controller
+                foreach (var c in Model)
+                {
+                <tr>
+                    <td>@c.Id</td>
+
+                    <td>
+                        @if (isTecnico)
+                            {
+                                // Técnicos visualizam nome e e-mail completos
+                        @($"{c.Nome ?? "-"}")  <br />
+                        <small class="text-muted">@($"{c.Email ?? "-"}")</small>
+                            }
+                            else
+                            {
+                                // Usuários comuns veem apenas um resumo da descrição
+                        @($"{c.Descricao?.Split(' ').Take(6).Aggregate((a,b)=> a + " " + b) ?? "-"}")
+                            }
+                    </td>
+
+                    <td>@(c.Urgencia ?? "-")</td>
+
+                    <td>
+                        // Conversão para horário local
+                        @(c.DataAbertura?.ToLocalTime().ToString("g") ?? "-")
+                    </td>
+
+                    <td>@(c.Status ?? "-")</td>
+
+                    <td>
+                        <!-- Botão de detalhes do chamado -->
+                        <a class="btn btn-sm btn-info"
+                           href="@Url.Action("Details","Chamados", new { id = c.Id })">
+                            Detalhes
+                        </a>
+                    </td>
+                </tr>
+                }
+            }
+
+            </tbody>
+        </table>
+    </div>

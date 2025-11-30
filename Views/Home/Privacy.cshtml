@@ -1,0 +1,117 @@
+﻿@{
+    ViewData["Title"] = "Privacidade e Termos de Uso"; // Define o título da página
+    Layout = "_Layout"; // Usa o layout principal
+}
+
+// Conteúdo principal da página
+<main class="container py-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+
+            <h1>Política de Privacidade & Termos de Uso</h1>
+            <p class="text-muted">Última atualização: @DateTime.Now.ToString("dd/MM/yyyy")</p>
+
+            // Seção de introdução
+            <section class="mt-4">
+                <h2>1. Introdução</h2>
+                <p>
+                    Bem-vindo ao sistema <strong>Tony TI</strong>. Esta página descreve como coletamos, usamos e protegemos dados,
+                    bem como os termos de uso da aplicação. Ao utilizar o sistema, você concorda com estes termos.
+                </p>
+            </section>
+
+            // Dados coletados no sistema
+            <section class="mt-4">
+                <h2>2. Quais dados coletamos</h2>
+                <ul>
+                    <li>Dados de conta: e-mail, nome e senha (armazenada em formato seguro/hash).</li>
+                    <li>Dados opcionais: foto de perfil, histórico de chamados, anexos enviados (quando aplicável).</li>
+                    <li>Dados técnicos: logs de acesso, endereço IP e informações de sessão.</li>
+                </ul>
+            </section>
+
+            // Finalidades do tratamento de dados
+            <section class="mt-4">
+                <h2>3. Finalidades do tratamento</h2>
+                <p>Os dados são utilizados para:</p>
+                <ul>
+                    <li>Autenticação e autorização;</li>
+                    <li>Gerenciar chamados;</li>
+                    <li>Enviar notificações;</li>
+                    <li>Melhorias e segurança do sistema.</li>
+                </ul>
+            </section>
+
+            // LGPD e direitos dos usuários
+            <section class="mt-4">
+                <h2>4. Base legal e LGPD</h2>
+                <p>
+                    Tratamos dados pessoais em conformidade com a LGPD (Lei n.º 13.709/2018).
+                </p>
+                <p>
+                    Direitos dos titulares incluem acesso, correção e eliminação de dados.
+                </p>
+            </section>
+
+            // Medidas de segurança
+            <section class="mt-4">
+                <h2>5. Segurança</h2>
+                <p>
+                    Adotamos práticas adequadas de segurança.
+                </p>
+                <ul>
+                    <li>Senhas armazenadas com hash;</li>
+                    <li>HTTPS;</li>
+                    <li>Controle de acesso;</li>
+                    <li>Backups e logs.</li>
+                </ul>
+            </section>
+
+            // Conformidade com normas ISO
+            <section class="mt-4">
+                <h2>6. Conformidade com normas (ISO)</h2>
+                <p>Referências alinhadas à ISO/IEC 27001.</p>
+            </section>
+
+            // Política de retenção de dados
+            <section class="mt-4">
+                <h2>7. Retenção e eliminação de dados</h2>
+                <p>Os dados são mantidos enquanto necessários ou exigidos por lei.</p>
+            </section>
+
+            // Limitações e responsabilidades
+            <section class="mt-4">
+                <h2>8. Responsabilidades e limitações</h2>
+                <p>Não garantimos disponibilidade contínua. O usuário é responsável por suas credenciais.</p>
+            </section>
+
+            // Contato administrativo
+            <section class="mt-4">
+                <h2>9. Contato</h2>
+                <p>
+                    Contato para suporte e dados pessoais: e-mails informados.
+                </p>
+            </section>
+
+            // Créditos acadêmicos
+            <section class="mt-4">
+                <h2>10. Créditos</h2>
+                <ul>
+                    <li><strong>Arthur Daniel</strong></li>
+                    <li><strong>Gabriel Gasparini</strong></li>
+                </ul>
+            </section>
+
+            // Informações sobre atualizações
+            <section class="mt-4">
+                <h2>11. Atualizações desta política</h2>
+                <p>A data será atualizada sempre que houver mudanças relevantes.</p>
+            </section>
+
+            // Botão de retorno
+            <div class="mt-4">
+                <a class="btn btn-primary" asp-action="Index" asp-controller="Home">Voltar</a>
+            </div>
+        </div>
+    </div>
+</main>

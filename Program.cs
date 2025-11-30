@@ -8,33 +8,45 @@ using TonyTI_Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Registra HttpClientFactory genérico (útil para controllers que usam IHttpClientFactory)
+builder.Services.AddHttpClient();
+
+// se tiver um serviço tipado para OpenAI, mantém também a linha abaixo.
+// Certifique-se de que a classe OpenAiChatService e a interface IChatService existam no projeto.
+// Essa linha registra um typed client que pode ser injetado como IChatService.
+builder.Services.AddHttpClient<IChatService, OpenAiChatService>();
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Recupera e valida a connection string (lança exceção se não existir)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                       ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não encontrada em appsettings.json");
+// Necessário para acessar o HttpContext em partials (ex: _Nav)
+builder.Services.AddHttpContextAccessor();
 
-// Registra a fábrica de conexão com a connection string válida
+// Recupera connection string do appsettings.json
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                       ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não encontrada.");
+
+// Registra a factory de conexão SQL
 builder.Services.AddSingleton<ISqlConnectionFactory>(_ => new SqlConnectionFactory(connectionString));
 
-// Serviços de negócio (injeção de dependência)
+// Injeção dos serviços da aplicação
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IChamadoService, ChamadoService>();
 
-// Registra o email sender (use Transient ou Scoped conforme sua necessidade).
-// Atenção: certifique-se de ter apenas UMA interface IEmailSender no projeto.
+// Serviço de envio de e-mail
 builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 
-// (Opcional) Swagger (apenas para desenvolvimento)
+// Swagger (opcional)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Autenticação via cookie (configuração básica)
+// Autenticação via cookies
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/Account/Login";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
@@ -64,6 +76,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Rota padrão
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

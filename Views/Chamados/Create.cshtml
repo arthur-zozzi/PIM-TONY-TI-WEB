@@ -1,0 +1,73 @@
+﻿@model TonyTI_Web.Models.Chamado
+
+@{
+    // Define título e layout padrão da página
+    ViewData["Title"] = "Abrir Chamado";
+    Layout = "_Layout";
+}
+
+<h2>Abrir Chamado</h2>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    // Exibe erros de validação enviados pelo controller
+<div class="alert alert-danger">@Html.ValidationSummary(false)</div>
+}
+
+<form asp-action="Create" asp-controller="Chamados" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken() // Segurança contra CSRF
+
+    <div class="mb-3">
+        // Campo obrigatório: Nome do solicitante
+        <label class="form-label">Nome</label>
+        <input asp-for="Nome" class="form-control" />
+        <span asp-validation-for="Nome" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        // E-mail do solicitante (usado para contato e notificações)
+        <label class="form-label">E-mail</label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        // Telefone opcional
+        <label class="form-label">Telefone</label>
+        <input asp-for="Telefone" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        // Grau de urgência do chamado
+        <label class="form-label">Grau de Urgência</label>
+        <select asp-for="Urgencia" class="form-select">
+            <option value="">Selecione...</option>
+            <option>1 - Baixa</option>
+            <option>2- Média</option>
+            <option>3 - Moderada</option>
+            <option>4 - Grave</option>
+            <option>5 - Urgente</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        // Descrição detalhada do problema
+        <label class="form-label">Descrição</label>
+        <textarea asp-for="Descricao" class="form-control" rows="4"></textarea>
+    </div>
+
+    <div class="mb-3">
+        // Upload de arquivo opcional (imagem, PDF etc.)
+        <label class="form-label">Anexo (opcional)</label>
+        <input type="file" name="anexo" class="form-control" />
+    </div>
+
+    // Botões de ação
+    <button type="submit" class="btn btn-primary">Enviar Chamado</button>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    // Scripts de validação do ASP.NET
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

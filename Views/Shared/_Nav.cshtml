@@ -1,0 +1,74 @@
+﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+
+@{
+    var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
+    var userName = isAuthenticated ? (User.Identity?.Name ?? "") : "";
+}
+
+<nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+    <div class="container-fluid">
+        <a class="navbar-brand" asp-controller="Home" asp-action="Index">Tony TI</a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNavbar">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Home" asp-action="Index">Home</a>
+                </li>
+
+                @if (isAuthenticated)
+                {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Chamados" asp-action="Index">Meus Chamados</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Chamados" asp-action="Create">Abrir Chamado</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Home" asp-action="Help">Ajuda</a>
+                </li>
+                }
+                else
+                {
+                    // guest: optional privacy link kept minimal (if you want)
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                </li>
+                }
+            </ul>
+
+            @* Right side: if authenticated show user name + logout button, otherwise show login/register *@
+            <ul class="navbar-nav ms-auto">
+                @if (isAuthenticated)
+                {
+                <li class="nav-item d-flex align-items-center me-2">
+                    <span class="text-muted small">Olá, @userName</span>
+                </li>
+
+                <li class="nav-item">
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-link nav-link" style="display:inline;padding:0;">Sair</button>
+                    </form>
+                </li>
+                }
+                else
+                {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Account" asp-action="Login">Login</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Account" asp-action="Register">Primeiro Acesso</a>
+                </li>
+                }
+            </ul>
+        </div>
+    </div>
+</nav>

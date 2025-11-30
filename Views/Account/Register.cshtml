@@ -1,0 +1,110 @@
+﻿@model TonyTI_Web.Models.Register
+
+@{
+    // Define título e layout
+    ViewData["Title"] = "Cadastrar Usuário";
+    Layout = "_Layout";
+    // Mensagens podem vir via ViewBag (quando retorna View) ou TempData (quando redireciona)
+    var successMsg = ViewBag.Message as string;
+    var tempMsg = TempData["Message"] as string;
+}
+
+<h2>Cadastrar - Primeiro Acesso</h2>
+
+@* Exibe mensagem de sucesso (ViewBag) quando o controlador retorna View(...) *@
+@if (!string.IsNullOrEmpty(successMsg))
+{
+<div class="alert alert-success">@successMsg</div>
+}
+
+@* Também exibe mensagem vindo de TempData (caso outro fluxo use) *@
+@if (!string.IsNullOrEmpty(tempMsg))
+{
+<div class="alert alert-success">@tempMsg</div>
+}
+
+<form asp-action="Register" method="post" onsubmit="return validateRegisterForm();">
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+    <div class="form-group">
+        <label asp-for="Email"></label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Nome"></label>
+        <input asp-for="Nome" class="form-control" />
+        <span asp-validation-for="Nome" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Senha"></label>
+        <input asp-for="Senha" type="password" class="form-control" id="senha" />
+        <small class="form-text text-muted">Mínimo 8 caracteres, deve conter letras e números.</small>
+        <span asp-validation-for="Senha" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ConfirmarSenha"></label>
+        <input asp-for="ConfirmarSenha" type="password" class="form-control" id="confirmarSenha" />
+        <span asp-validation-for="ConfirmarSenha" class="text-danger"></span>
+    </div>
+
+    <div style="margin-top:10px;">
+        <button type="submit" class="btn btn-success">Cadastrar</button>
+        <a asp-action="Login" class="btn btn-secondary" style="margin-left:8px;">Voltar ao Login</a>
+    </div>
+</form>
+
+@section Scripts {
+    @* Certifique-se que _Layout carrega jquery, jquery.validate e jquery.validate.unobtrusive. *@
+
+    <script>
+        // Validação cliente simples para o formulário de registro
+        function validateRegisterForm() {
+            var senhaEl = document.getElementById('senha');
+            var confirmarEl = document.getElementById('confirmarSenha');
+
+            var senha = senhaEl ? senhaEl.value : '';
+            var confirmar = confirmarEl ? confirmarEl.value : '';
+
+            // Verifica preenchimento
+            if (!senha || !confirmar) {
+                alert('Preencha a senha e sua confirmação.');
+                return false;
+            }
+
+            // Comprimento mínimo
+            if (senha.length < 8) {
+                alert('A senha deve ter pelo menos 8 caracteres.');
+                return false;
+            }
+
+            // Verifica presença de letra e número
+            var hasLetter = /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(senha);
+            var hasNumber = /\d/.test(senha);
+
+            if (!hasLetter || !hasNumber) {
+                alert('A senha deve conter pelo menos uma letra e um número.');
+                return false;
+            }
+
+            // Confirmação de senha
+            if (senha !== confirmar) {
+                alert('As senhas não conferem.');
+                return false;
+            }
+
+            // Se usa unobtrusive validation, verifica também antes de submeter
+            if (typeof ($) !== 'undefined' && typeof ($.validator) !== 'undefined') {
+                var form = $('form[asp-action="Register"]');
+                if (form.length && !form.valid()) return false;
+            }
+
+            return true;
+        }
+    </script>
+}

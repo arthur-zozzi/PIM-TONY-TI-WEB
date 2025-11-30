@@ -1,0 +1,61 @@
+﻿@{
+    ViewData["Title"] = "Ajuda com Inteligência Artificial (DEMO)";
+    Layout = "_Layout";
+}
+
+<h2>Ajuda Inteligente</h2>
+<p>Digite sua pergunta técnica abaixo:</p>
+
+<div style="margin-bottom:10px;">
+    <textarea id="question" class="form-control" rows="5" placeholder="Digite sua pergunta aqui..."></textarea>
+</div>
+
+<button id="btnEnviar" class="btn btn-primary">Enviar pergunta</button>
+<button id="btnLimpar" class="btn btn-secondary" style="margin-left:8px;">Limpar</button>
+
+<hr />
+
+<h4>Resposta:</h4>
+<div id="answerBox" class="p-3 border rounded" style="min-height:120px; background:#f8f8f8;">
+    Nenhuma resposta ainda.
+</div>
+
+<script>
+    // Evento do botão que envia a pergunta para o backend (HelpController)
+    document.getElementById("btnEnviar").addEventListener("click", async function () {
+
+        // Captura o texto digitado pelo usuário
+        let question = document.getElementById("question").value.trim();
+
+        // Validação simples
+        if (!question) {
+            alert("Digite uma pergunta.");
+            return;
+        }
+
+        try {
+            // Envia requisição para o método Help/Ask via POST
+            let response = await fetch("/Help/Ask", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question: question })  // Envia a pergunta como JSON
+            });
+
+            // Lê a resposta da API
+            let data = await response.json();
+
+            // Atualiza o box com a resposta recebida
+            document.getElementById("answerBox").innerText = data.answer;
+
+        } catch (e) {
+            // Caso ocorra erro na comunicação
+            document.getElementById("answerBox").innerText = "Erro ao enviar pergunta.";
+        }
+    });
+
+    // Botão para limpar a pergunta e a resposta
+    document.getElementById("btnLimpar").addEventListener("click", function () {
+        document.getElementById("question").value = "";
+        document.getElementById("answerBox").innerText = "Nenhuma resposta ainda.";
+    });
+</script>

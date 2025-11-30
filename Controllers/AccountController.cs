@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using TonyTI_Web.Models;
 using TonyTI_Web.Services;
 
@@ -28,16 +29,160 @@ namespace TonyTI_Web.Controllers
             _configuration = configuration;
         }
 
+        #region Login
+
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
-            // se vier uma mensagem via TempData (ex: após reset), mostramos na view
             ViewBag.Message = TempData["Message"] as string;
             return View();
         }
 
-        // ... seu POST Login existente aqui (não alterado) ...
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(string email, string senha, string? returnUrl = null)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            _logger.LogInformation("Login POST recebido para email={Email}", email);
+
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(senha))
+            {
+                ModelState.AddModelError(string.Empty, "Preencha e-mail e senha.");
+                _logger.LogWarning("Login inválido: e-mail ou senha em branco.");
+                return View();
+            }
+
+            try
+            {
+                var user = await _usuarioService.AuthenticateAsync(email.Trim(), senha);
+                if (user == null)
+                {
+                    ModelState.AddModelError(string.Empty, "Login ou senha incorretos.");
+                    _logger.LogInformation("Autenticação falhou para {Email}", email);
+                    return View();
+                }
+
+                var userEmail = user.Email ?? string.Empty;
+                var userName = string.IsNullOrWhiteSpace(user.Nome) ? userEmail : user.Nome;
+                var userPerfil = string.IsNullOrWhiteSpace(user.Perfil) ? "Usuario" : user.Perfil;
+
+                if (string.Equals(userEmail, "gatogamer123xd@gmail.com", StringComparison.OrdinalIgnoreCase))
+                {
+                    userPerfil = "Tecnico";
+                }
+
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, userEmail),
+                    new Claim(ClaimTypes.Name, userName),
+                    new Claim(ClaimTypes.Email, userEmail),
+                    new Claim("Perfil", userPerfil)
+                };
+
+                var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+
+                _logger.LogInformation("Usuário {Email} autenticado com sucesso. Perfil={Perfil}", userEmail, userPerfil);
+
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    return Redirect(returnUrl);
+
+                return RedirectToAction("Index", "Home");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao autenticar usuário {Email}", email);
+                ModelState.AddModelError(string.Empty, "Ocorreu um erro interno. Tente novamente mais tarde.");
+                return View();
+            }
+        }
+
+        #endregion
+
+        #region Register (Primeiro Acesso)
+
+        [HttpGet]
+        public IActionResult Register()
+        {
+            return View();
+        }
+
+        // POST: /Account/Register
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(Register model)
+        {
+            _logger.LogInformation("Register POST recebido para email={Email}", model?.Email);
+
+            if (model == null)
+            {
+                ModelState.AddModelError(string.Empty, "Dados do formulário inválidos.");
+                return View();
+            }
+
+            // Reexibe valores úteis (se você usa ViewData em layout)
+            ViewData["Email"] = model.Email;
+            ViewData["Nome"] = model.Nome;
+
+            // Se houver erros de DataAnnotations, retorna para a view mostrando-os
+            if (!ModelState.IsValid)
+                return View(model);
+
+            // Regras adicionais
+            if (string.IsNullOrEmpty(model.Senha) || model.Senha.Length < 8)
+            {
+                ModelState.AddModelError(nameof(model.Senha), "A senha deve ter pelo menos 8 caracteres.");
+                return View(model);
+            }
+
+            var pwdPattern = new Regex(@"(?=.*\p{L})(?=.*\d)", RegexOptions.Compiled);
+            if (!pwdPattern.IsMatch(model.Senha))
+            {
+                ModelState.AddModelError(nameof(model.Senha), "A senha deve conter pelo menos uma letra e um número.");
+                return View(model);
+            }
+
+            if (!IsValidEmail(model.Email))
+            {
+                ModelState.AddModelError(nameof(model.Email), "E-mail em formato inválido.");
+                return View(model);
+            }
+
+            if (await _usuarioService.EmailExistsAsync(model.Email.Trim()))
+            {
+                ModelState.AddModelError(nameof(model.Email), "E-mail já cadastrado.");
+                return View(model);
+            }
+
+            try
+            {
+                var u = await _usuarioService.CreateAsync(model.Email.Trim(), model.Senha, model.Nome ?? string.Empty);
+
+                // ======= SUCESSO: mantém o usuário na view de cadastro, mostra mensagem =======
+                // Limpa o ModelState para "resetar" o formulário (opcional)
+                ModelState.Clear();
+
+                // Passa a mensagem para a View — como você pediu, mostramos aqui e permanecemos na mesma página
+                ViewBag.Message = "Cadastro realizado com sucesso!";
+
+                _logger.LogInformation("Novo usuário criado: {Email} (Perfil={Perfil})", u.Email, u.Perfil);
+
+                // Retorna a view vazia (ou poderia retornar um model novo se preferir)
+                return View(new Register());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao criar usuário {Email}", model.Email);
+                ModelState.AddModelError(string.Empty, "Ocorreu um erro ao criar o usuário. Tente novamente mais tarde.");
+                return View(model);
+            }
+        }
+
+
+        #endregion
+
+        #region Forgot/Reset Password
 
         [HttpGet]
         public IActionResult ForgotPassword()
@@ -45,7 +190,6 @@ namespace TonyTI_Web.Controllers
             return View();
         }
 
-        // POST: /Account/ForgotPassword
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForgotPassword(string email)
@@ -60,19 +204,16 @@ namespace TonyTI_Web.Controllers
             var exists = await _usuarioService.EmailExistsAsync(email);
             if (!exists)
             {
-                // mostra imediatamente que o e-mail não existe (conforme solicitado)
                 ModelState.AddModelError(string.Empty, "E-mail não encontrado.");
                 return View();
             }
 
-            // gera código de recuperação (numérico)
             var codeLength = 6;
             if (int.TryParse(_configuration["Recovery:CodeLength"], out var cfgLen))
                 codeLength = Math.Max(4, cfgLen);
 
             var recoveryCode = GenerateNumericCode(codeLength);
 
-            // salva o código no banco (recuperacaoSenha)
             var saved = await _usuarioService.SetRecoveryCodeAsync(email, recoveryCode);
             if (!saved)
             {
@@ -81,22 +222,22 @@ namespace TonyTI_Web.Controllers
                 return View();
             }
 
-            // envia e-mail com o código
-            var subject = "Código de Recuperação de Senha";
+            var subject = "Código de Recuperação de Senha - TonyTI";
             var expiry = _configuration["Recovery:CodeExpiryMinutes"] ?? "15";
             var body = $@"
-                Olá,
+Olá,
 
-                Você solicitou a recuperação de senha. Use o código abaixo para redefinir sua senha.
-                
-                Código: {recoveryCode}
+Você solicitou a recuperação de senha. Use o código abaixo para redefinir sua senha.
 
-                Esse código expira em {expiry} minutos.
+Código: {recoveryCode}
 
-                Se você não solicitou, ignore essa mensagem.
-                
-                Atenciosamente, Equipe de Suporte - TonyTI.
-            ";
+Esse código expira em {expiry} minutos.
+
+Se você não solicitou, ignore essa mensagem.
+
+Atenciosamente,
+Equipe de Suporte - TonyTI.
+";
 
             try
             {
@@ -109,7 +250,6 @@ namespace TonyTI_Web.Controllers
                 return View();
             }
 
-            // redireciona para a página de inserção do código (ResetPassword)
             TempData["Message"] = "Código enviado para o e-mail informado.";
             return RedirectToAction("ResetPassword", new { email = email });
         }
@@ -119,17 +259,14 @@ namespace TonyTI_Web.Controllers
         {
             if (string.IsNullOrWhiteSpace(email))
             {
-                // se for acessada sem email, redireciona para ForgotPassword
                 return RedirectToAction(nameof(ForgotPassword));
             }
 
-            // a view exibirá um formulário para código + nova senha
             ViewBag.Email = email;
             ViewBag.Message = TempData["Message"] as string;
             return View();
         }
 
-        // POST: /Account/ResetPassword
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetPassword(string email, string code, string novaSenha, string confirmarSenha)
@@ -155,7 +292,14 @@ namespace TonyTI_Web.Controllers
                 return View();
             }
 
-            // verifica o código
+            // unificamos a política para reset: mínimo 8 e contém letra+digito
+            if (!IsPasswordStrong(novaSenha))
+            {
+                ModelState.AddModelError(string.Empty, "Senha fraca. Use ao menos 8 caracteres contendo letras e números.");
+                ViewBag.Email = email;
+                return View();
+            }
+
             var codeOk = await _usuarioService.VerifyRecoveryCodeAsync(email.Trim(), code.Trim());
             if (!codeOk)
             {
@@ -164,7 +308,6 @@ namespace TonyTI_Web.Controllers
                 return View();
             }
 
-            // computa hash da nova senha e atualiza
             var newHash = ComputeHash(novaSenha);
             var updated = await _usuarioService.UpdatePasswordWithHashAsync(email.Trim(), newHash);
             if (!updated)
@@ -179,16 +322,30 @@ namespace TonyTI_Web.Controllers
             return RedirectToAction("Login");
         }
 
-        // helpers
+        #endregion
+
+        #region Logout
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync();
+            return RedirectToAction("Login");
+        }
+
+        #endregion
+
+        #region Helpers
+
         private static string GenerateNumericCode(int length)
         {
-            var rng = RandomNumberGenerator.Create();
+            using var rng = RandomNumberGenerator.Create();
             var buffer = new byte[length];
             rng.GetBytes(buffer);
             var sb = new StringBuilder(length);
             for (int i = 0; i < length; i++)
             {
-                // 0..9
                 sb.Append((buffer[i] % 10).ToString());
             }
             return sb.ToString();
@@ -201,5 +358,28 @@ namespace TonyTI_Web.Controllers
             var hash = sha.ComputeHash(bytes);
             return Convert.ToBase64String(hash);
         }
+
+        private static bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsPasswordStrong(string senha)
+        {
+            if (string.IsNullOrEmpty(senha) || senha.Length < 8) return false;
+            bool hasLetter = Regex.IsMatch(senha, @"\p{L}");
+            bool hasDigit = Regex.IsMatch(senha, @"\d");
+            return hasLetter && hasDigit;
+        }
+
+        #endregion
     }
 }

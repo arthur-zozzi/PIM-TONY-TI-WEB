@@ -1,22 +1,36 @@
 ﻿@{
+    // Define o título da página
     ViewData["Title"] = "Verificar código";
+
+    // Recupera o e-mail passado pelo controller
     var email = ViewData["email"]?.ToString() ?? "";
 }
+
 <h2>Verificar código</h2>
 
+@* Exibe erros de validação, caso existam *@
 @if (!ViewData.ModelState.IsValid)
 {
 <div class="alert alert-danger">
-    @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors)) { <div>@e.ErrorMessage</div> }
+    @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+    <div>@e.ErrorMessage</div>
+        }
 </div>
 }
 
 <form asp-action="VerifyCode" method="post">
-    @Html.AntiForgeryToken()
+    @Html.AntiForgeryToken()   // Token anti-CSRF
+
+    // Campo oculto contendo o e-mail do usuário
     <input type="hidden" name="email" value="@email" />
+
     <div class="form-group">
         <label for="code">Código recebido por e-mail</label>
+
+        // Entrada onde o usuário digita o código recebido
         <input id="code" name="code" class="form-control" />
     </div>
+
     <button type="submit" class="btn btn-primary mt-2">Verificar</button>
 </form>

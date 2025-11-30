@@ -1,53 +1,100 @@
 ﻿@{
+ <!-- Define título e layout da página -->
     ViewData["Title"] = "Login";
-    var returnUrl = ViewData["ReturnUrl"] as string;
-    var emailValue = ViewData["email"] as string ?? string.Empty;
+    Layout = "_Layout";
+
+ <!-- Recupera o returnUrl enviado pelo controller -->
+    var returnUrl = ViewData["ReturnUrl"] as string ?? string.Empty;
+
+ <!-- Captura mensagens vindas via TempData ou ViewBag -->
+    var tempMsg = TempData["Message"] as string;
+    var tempSuccess = TempData["SuccessMessage"] as string;
+    var viewMsg = ViewBag.Message as string;
 }
 
-<h1>Entrar</h1>
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h3 class="card-title mb-3 text-center">TONY | TI - LOGIN</h3>
 
-@if (!ViewData.ModelState.IsValid)
-{
-<div class="validation-summary-errors" style="color: #a94442; margin-bottom:10px;">
-    @Html.ValidationSummary(false)
-</div>
-}
+                <!-- Exibe mensagem de sucesso do cadastro ou outras operações -->
+                @if (!string.IsNullOrEmpty(tempSuccess))
+                {
+                <div class="alert alert-success" role="alert">@tempSuccess</div>
+                }
+                else if (!string.IsNullOrEmpty(tempMsg))
+                {
+                <div class="alert alert-success" role="alert">@tempMsg</div>
+                }
+                else if (!string.IsNullOrEmpty(viewMsg))
+                {
+                <div class="alert alert-success" role="alert">@viewMsg</div>
+                }
 
-<form asp-controller="Account" asp-action="Login" method="post">
-    @Html.AntiForgeryToken()
+                <!-- Erros de validação -->
+                @if (!ViewData.ModelState.IsValid)
+                {
+                <div class="alert alert-danger" role="alert">
+                    @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+                </div>
+                }
 
-    <div class="form-group" style="margin-bottom:10px;">
-        <label for="email">E-mail</label>
-        <input type="email" name="email" id="email" class="form-control" value="@emailValue" required />
-    </div>
+                <form asp-action="Login" method="post" novalidate>
+                    @Html.AntiForgeryToken()
 
-    <div class="form-group" style="margin-bottom:10px;">
-        <label for="senha">Senha</label>
-        <input type="password" name="senha" id="senha" class="form-control" required />
-    </div>
+                    <!-- Transporta returnUrl para o POST -->
+                    <input type="hidden" name="returnUrl" value="@(returnUrl ?? String.Empty)" />
 
-    <div class="form-group" style="margin-top:15px;">
-        <button type="submit" class="btn btn-primary">Entrar</button>
-        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary" style="margin-left:8px;">Cancelar</a>
-    </div>
+                    <div class="form-group mb-3">
+                        <label for="txtLogin">E-mail</label>
+                        <!-- Campo de e-mail -->
+                        <input type="email" name="email" class="form-control" id="txtLogin" placeholder="seu-email@email.com" required />
+                    </div>
 
-    @if (!string.IsNullOrEmpty(returnUrl))
-    {
-    <input type="hidden" name="returnUrl" value="@returnUrl" />
-    }
-</form>
+                    <div class="form-group mb-3 position-relative">
+                        <label for="txtSenha">Senha</label>
+                        <!-- Campo de senha -->
+                        <input type="password" name="senha" class="form-control" id="txtSenha" placeholder="Insira sua senha" required />
+                        <small class="form-text text-muted">Clique em "Entrar" para acessar.</small>
+                    </div>
 
-<hr />
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <!-- Botão de login -->
+                        <button type="submit" class="btn btn-success">Entrar</button>
 
-<div style="display:flex; gap:20px; align-items:center;">
-    <div>
-        <a asp-controller="Account" asp-action="Register" class="link">Primeiro Acesso</a>
-    </div>
-    <div>
-        <a asp-controller="Account" asp-action="ForgotPassword" class="link">Esqueci minha senha</a>
+                        <!-- Link de recuperação de senha -->
+                        <a asp-controller="Account" asp-action="ForgotPassword" class="btn btn-link">Esqueci minha senha</a>
+                    </div>
+
+                    <div class="text-center">
+                        <!-- Link para cadastro -->
+                        <a asp-controller="Account" asp-action="Register">Primeiro Acesso? Cadastre-se</a>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
 @section Scripts {
-    @* Manter os scripts do layout se quiser validação cliente *@
+    <script>
+        // Validação simples no lado do cliente 
+                (function () {
+                    const form = document.querySelector('form[asp-action="Login"]');
+                    if (!form) return;
+
+                    form.addEventListener('submit', function (e) {
+                        const email = form.querySelector('input[name="email"]').value.trim();
+                        const senha = form.querySelector('input[name="senha"]').value;
+
+                        if (!email || !senha) {
+                            e.preventDefault();
+                            alert('Preencha e-mail e senha.');
+                            return false;
+                        }
+                        return true;
+                    }, false);
+                })();
+    </script>
 }

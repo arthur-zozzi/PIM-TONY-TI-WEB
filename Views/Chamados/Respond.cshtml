@@ -1,0 +1,45 @@
+﻿@model TonyTI_Web.Models.Chamado
+@{
+    ViewData["Title"] = "Responder Chamado";
+    Layout = "_Layout"; // Define layout compartilhado
+}
+
+<h2>Responder Chamado - @Model?.Id</h2>
+
+@if (TempData["Message"] != null) {
+<div class="alert alert-success">@TempData["Message"]</div>  // Exibe mensagem de sucesso
+}
+
+<div>
+    <dl class="row">
+        <dt class="col-sm-2">Assunto</dt>
+        <dd class="col-sm-10">@Model?.Descricao</dd> // Descrição do chamado
+
+        <dt class="col-sm-2">Solicitante</dt>
+        <dd class="col-sm-10">@Model?.Nome (@Model?.Email)</dd> // Dados do usuário
+
+        <dt class="col-sm-2">Status</dt>
+        <dd class="col-sm-10">@Model?.Status</dd> // Status atual
+    </dl>
+</div>
+
+<form asp-action="Respond" method="post">
+    @Html.AntiForgeryToken() // Segurança contra CSRF
+    <input type="hidden" name="id" value="@Model?.Id" /> // ID do chamado
+
+    <div class="form-group">
+        <label for="respostaTecnico">Resposta do técnico</label>
+        <textarea id="respostaTecnico"
+                  name="respostaTecnico"
+                  class="form-control"
+                  rows="6">@Model?.RespostaTecnico</textarea> // Texto da resposta
+    </div>
+
+    <div style="margin-top:10px;">
+        <button type="submit" class="btn btn-primary">Salvar resposta</button> // Botão salvar
+        <a asp-action="Details"
+           asp-route-id="@Model?.Id"
+           class="btn btn-secondary"
+           style="margin-left:8px;">Voltar</a> // Voltar sem salvar
+    </div>
+</form>

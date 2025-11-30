@@ -1,0 +1,78 @@
+﻿@model IEnumerable<TonyTI_Web.Models.Chamado>
+
+    @{
+ <!-- Define título da página e layout principal -->
+    ViewData["Title"] = "Meus Chamados";
+    Layout = "_Layout";
+    }
+
+    <!-- Renderiza o menu de navegação -->
+    @await Html.PartialAsync("_Nav")
+
+    <div class="container">
+        <h2>Meus Chamados</h2>
+
+        <!-- Exibe mensagens de sucesso -->
+        @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success">@TempData["Message"]</div>
+    }
+
+        <!-- Botão para abrir novo chamado -->
+        <p>
+            <a class="btn btn-primary" href="@Url.Action("Create","Chamados")">Abrir Chamado</a>
+        </p>
+
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Assunto / Descrição</th>
+                    <th>Urgência</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <!-- Exibe aviso caso o usuário não tenha chamados -->
+                @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="6"><em>Você ainda não abriu chamados.</em></td>
+                </tr>
+            }
+            else
+            {
+ <!-- Lista de chamados do usuário -->
+                foreach (var c in Model)
+                {
+                <tr>
+                    <td>@c.Id</td>
+
+                    <!-- Descrição + identificação do solicitante -->
+                    <td>
+                        @(string.IsNullOrWhiteSpace(c.Descricao) ? "-" : c.Descricao)
+                        <br />
+                        <small class="text-muted">@($"{c.Nome ?? "-"} ({c.Email ?? "-"})")</small>
+                    </td>
+
+                    <td>@(c.Urgencia ?? "-")</td>
+
+                    <!-- Data de abertura formatada -->
+                    <td>@(c.DataAbertura?.ToLocalTime().ToString("g") ?? "-")</td>
+
+                    <td>@(c.Status ?? "-")</td>
+
+                    <!-- Acesso aos detalhes do chamado -->
+                    <td>
+                        <a class="btn btn-sm btn-info"
+                           href="@Url.Action("Details","Chamados", new { id = c.Id })">Detalhes</a>
+                    </td>
+                </tr>
+                }
+            }
+            </tbody>
+        </table>
+    </div>

@@ -1,0 +1,199 @@
+﻿@model TonyTI_Web.Models.Chamado
+@using System.Security.Claims
+
+@{
+    // Título da página
+    ViewData["Title"] = "Detalhes do Chamado";
+
+    // Verifica se o usuário está autenticado
+    bool isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
+
+    // Flag para identificar usuários técnicos
+    bool isTecnico = false;
+
+    if (isAuthenticated)
+    {
+        // Verifica claim "Perfil" ou "perfil"
+        var perfil = User.FindFirst("Perfil")?.Value
+                     ?? User.FindFirst("perfil")?.Value;
+
+        if (!string.IsNullOrEmpty(perfil) &&
+            perfil.Equals("Tecnico", StringComparison.OrdinalIgnoreCase))
+        {
+            isTecnico = true;
+        }
+
+        // Verificação usando roles padrões
+        if (!isTecnico)
+        {
+            if (User.IsInRole("Tecnico")) 
+
+                { 
+                    isTecnico = true;
+                }
+
+            if (!isTecnico)
+            {
+                var roleClaim =
+                    User.FindFirst(ClaimTypes.Role)?.Value
+                    ?? User.FindFirst("role")?.Value
+                    ?? User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
+
+                if (!string.IsNullOrEmpty(roleClaim) &&
+                    roleClaim.Equals("Tecnico", StringComparison.OrdinalIgnoreCase))
+                {
+                    isTecnico = true;
+                }
+            }
+        }
+
+        // Verifica perfis compostos como "Admin;Tecnico"
+        if (!isTecnico)
+        {
+            var allPerfil = User.Claims
+                .Where(c => c.Type.Equals("Perfil", StringComparison.OrdinalIgnoreCase)
+                         || c.Type.Equals("perfil", StringComparison.OrdinalIgnoreCase))
+                .Select(c => c.Value)
+                .FirstOrDefault();
+
+            if (!string.IsNullOrEmpty(allPerfil) &&
+                allPerfil.Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
+                .Any(v => v.Trim().Equals("Tecnico", StringComparison.OrdinalIgnoreCase)))
+            {
+                isTecnico = true;
+            }
+        }
+    }
+}
+
+<h2>Detalhes do Chamado</h2>
+
+@if (TempData["Message"] != null)
+{
+    // Mensagem informativa retornada pelo controller
+<div class="alert alert-info">@TempData["Message"]</div>
+}
+
+<div>
+    // Informações principais do chamado
+    <p><strong>Código:</strong> @Model.Id</p>
+    <p><strong>Nome:</strong> @Model.Nome</p>
+    <p><strong>E-mail:</strong> @Model.Email</p>
+    <p><strong>Telefone:</strong> @Model.Telefone</p>
+    <p><strong>Urgência:</strong> @Model.Urgencia</p>
+    <p><strong>Abertura:</strong> @(Model.DataAbertura?.ToString("g") ?? "-")</p>
+    <p><strong>Status:</strong> @Model.Status</p>
+
+    <hr />
+    <h4>Descrição</h4>
+    // Exibe descrição enviada pelo usuário
+    <div>@Html.Raw(Model.Descricao ?? "-")</div>
+
+    <hr />
+    <h4>Resposta do Técnico</h4>
+    <div>
+        // Caso ainda não tenha sido respondido
+        @if (string.IsNullOrWhiteSpace(Model.RespostaTecnico))
+        {
+        <em>- ainda não respondido -</em>
+        }
+        else
+        {
+        @Html.Raw(Model.RespostaTecnico)
+        }
+    </div>
+
+    <hr />
+    <h4>Anexo</h4>
+
+    @if (!string.IsNullOrEmpty(Model.Anexo))
+    {
+        // Link para abrir o anexo enviado
+        var downloadUrl = Url.Action("DownloadAnexo", "Chamados", new { path = Model.Anexo });
+
+    <p>
+        <a href="@downloadUrl" target="_blank" class="btn btn-sm btn-outline-primary">Abrir Anexo</a>
+        <small class="text-muted"> (@Model.Anexo)</small>
+    </p>
+    }
+    else
+    {
+        // Caso o chamado não tenha anexo
+    <p><em>Sem anexo</em></p>
+    }
+
+    <hr />
+
+    // Exibe o formulário de resposta somente para usuários técnicos
+    @if (isTecnico)
+    {
+    <button id="btnToggleResponder" class="btn btn-primary mb-3">Responder Chamado</button>
+
+    <div id="responderBox" style="display:none; margin-bottom:20px;">
+        <form asp-action="Responder" asp-controller="Chamados" method="post">
+            @Html.AntiForgeryToken()
+
+            // Envia o ID do chamado
+            <input type="hidden" name="id" value="@Model.Id" />
+
+            <div class="form-group">
+                <label for="respostaTecnico">Resposta</label>
+                <textarea id="respostaTecnico" name="respostaTecnico"
+                          class="form-control" rows="6">@Model.RespostaTecnico</textarea>
+            </div>
+
+            <div style="margin-top:10px;">
+                <button type="submit" class="btn btn-success">Enviar resposta</button>
+                <button type="button" id="btnCancelarResponder" class="btn btn-secondary" style="margin-left:8px;">Cancelar</button>
+            </div>
+        </form>
+    </div>
+    }
+    else
+    {
+        // Botão de voltar para usuários comuns
+    <p>
+        <a asp-action="Index" asp-controller="Chamados" class="btn btn-secondary">Voltar</a>
+    </p>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Manipulação da caixa de resposta
+        (function () {
+
+            var btn = document.getElementById('btnToggleResponder');
+            var box = document.getElementById('responderBox');
+            var btnCancel = document.getElementById('btnCancelarResponder');
+
+            if (btn && box) {
+
+                // Exibe/oculta caixa de resposta
+                btn.addEventListener('click', function () {
+                    box.style.display =
+                        (box.style.display === 'none' || box.style.display === '') ? 'block' : 'none';
+
+                    btn.textContent =
+                        box.style.display === 'none' ? 'Responder Chamado' : 'Ocultar';
+                });
+
+                // Se já houver resposta, abre a caixa automaticamente
+                var ta = document.getElementById('respostaTecnico');
+                if (ta && ta.value.trim().length > 0) {
+                    box.style.display = 'block';
+                    btn.textContent = 'Ocultar';
+                }
+            }
+
+            // Botão de cancelar
+            if (btnCancel && box) {
+                btnCancel.addEventListener('click', function () {
+                    box.style.display = 'none';
+                    if (btn) btn.textContent = 'Responder Chamado';
+                });
+            }
+
+        })();
+    </script>
+}
